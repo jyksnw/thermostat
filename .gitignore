@@ -1,2 +1,8 @@
+# Clion settings
 .idea
+
+# Platformio build files
 .pioenvs
+
+
+.sconsign.dblite
