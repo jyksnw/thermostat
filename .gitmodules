@@ -1,0 +1,9 @@
+[submodule "lib/pubsubclient"]
+	path = lib/pubsubclient
+	url = https://github.com/knolleary/pubsubclient.git
+[submodule "lib/dallastemperature"]
+	path = lib/dallastemperature
+	url = https://github.com/milesburton/Arduino-Temperature-Control-Library.git
+[submodule "lib/onewire"]
+	path = lib/onewire
+	url = https://github.com/PaulStoffregen/OneWire.git
