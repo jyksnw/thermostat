@@ -52,8 +52,8 @@ DeviceAddress _device_address;
 
 // Update these with values suitable for your network.
 
-const char* ssid = "***REMOVED***";
-const char* password = "***REMOVED***";
+const char* ssid = "****";
+const char* password = "***********";
 const char* mqtt_server = "thermostat-hub";
 
 WiFiClient wifi_client;
