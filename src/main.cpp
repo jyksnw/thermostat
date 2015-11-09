@@ -48,7 +48,7 @@ uint8_t _alarm_state = LOW;
 char _alarm_on[] = "ON";
 char _alarm_off[] = "OFF";
 
-// Thermostat
+// DS18B20 thermostat sensor variables
 OneWire one_wire(one_wire_bus);
 DallasTemperature device(&one_wire);
 DeviceAddress _device_address;
@@ -81,6 +81,9 @@ char _topic[50];
 char _message[25];
 MessageQueue _unsent_messages;
 
+/**
+ * Initiates the program
+ */
 void setup() {
     Serial.begin(9600);
 
@@ -100,6 +103,9 @@ void setup() {
     }
 }
 
+/**
+ * Main program loop
+ */
 void loop() {
     if (!client.connected()) {
         _mqtt_reconnect.start();
@@ -111,12 +117,16 @@ void loop() {
     _check_alarm.run();
 }
 
+/**
+ * Establishes a connection to the WiFi network
+ */
 void setup_wifi() {
     delay(10);
 
     Serial.printf("Connecting to wiFi network %s\n", ssid);
     WiFi.begin(ssid, password);
 
+    // TODO: It is possible to get hung here as this is a blocking call.
     while (WiFi.status() != WL_CONNECTED) {
         delay(500);
         Serial.print('.');
@@ -126,6 +136,9 @@ void setup_wifi() {
     Serial.println("WiFi Connected");
 }
 
+/**
+ * Non-blocking call to reconnect to the MQTT broker
+ */
 void reconnect() {
     if (client.connect("thermostat")) {
         Serial.println("MQTT Connected");
@@ -146,6 +159,9 @@ void reconnect() {
     }
 }
 
+/**
+ * Requests the current temperature from the DS18B20 sensor
+ */
 void get_temperature() {
     Serial.print("Getting temperature: ");
     float current_temp;
@@ -155,6 +171,7 @@ void get_temperature() {
 
     Serial.println(current_temp);
 
+    // Only update the current temperature if it differs from the prior recorded temperature
     if (current_temp != _current_temp) {
         _current_temp = current_temp;
 
@@ -164,19 +181,30 @@ void get_temperature() {
     }
 }
 
+/**
+ * Sets the temperature threshold.
+ * This is called from a MQTT callback, thus the input value is in the form of a string
+ */
 void set_temperature_threshold(char* threshold_value) {
+    // Attempt to conver the string to a double
     double temp_threshold = atof(threshold_value);
 
     if (temp_threshold) {
+        // Only update the threshold value if it differes from the prior value
         if (temp_threshold != _temp_threshold) {
             Serial.print("Setting threshold value to ");
             Serial.println(temp_threshold);
             _temp_threshold = temp_threshold;
+
+            // Now call the set alarm threshold function
             set_alarm_threshold();
         }
     }
 }
 
+/**
+ * Writes the low alarm threshold value to the DS18B20 sensor
+ */
 void set_alarm_threshold() {
     float current_alarm_threshold = device.getLowAlarmTemp(_device_address);
 
@@ -186,14 +214,22 @@ void set_alarm_threshold() {
     }
 }
 
+/**
+ * Checks the current alarm state of the DS18B20
+ */
 void check_alarm() {
     device.processAlarms();
 
+    // If the device doesn't have an alarm we still need to call alarm_callback as it resets the alarm state.
     if (!device.hasAlarm()) {
         alarm_callback(_device_address);
     }
 }
 
+/**
+ * A callback function that is called when the DS18B20 has an alarm.
+ * The function is also called during a check_alarm to potentially reset the alarm state.
+ */
 void alarm_callback(const uint8_t * device_address) {
     uint8_t alarm_state;
 
@@ -203,6 +239,7 @@ void alarm_callback(const uint8_t * device_address) {
         alarm_state = LOW;
     }
 
+    // Send out a alarm publication if the alarm state has changed
     if (alarm_state != _alarm_state) {
         _alarm_state = alarm_state;
 
@@ -212,6 +249,9 @@ void alarm_callback(const uint8_t * device_address) {
     }
 }
 
+/**
+ * A callback function that is called when a subscribed topic has a new message
+ */
 void mqtt_callback(char* topic, byte* payload, unsigned int length) {
     char packet[length + 1];
     memcpy(packet, payload, length);
@@ -228,18 +268,34 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
     }
 }
 
+/**
+ * Places the topic into the _topic variable
+ * This will overwrite any prior value stored in _topic
+ */
 void build_topic(char* topic) {
     snprintf (_topic, sizeof(_topic), "%s%d%s", _thermostat_topic_prefix, _thermostat_id, topic);
 }
 
+/**
+ * Places the integer value into the _message variable
+ * This will overwrite any prior value stored in _message
+ */
 void build_message(int value) {
     snprintf(_message, sizeof(_message), "%d", value);
 }
 
+/**
+ * Places the string value into the _message variable
+ * This will overwrite any prior value stored in _message
+ */
 void build_message(char* value) {
     snprintf(_message, sizeof(_message), "%s", value);
 }
 
+/**
+ * Places the float value into the _message variable
+ * This will overwrite any prior value stored in _message
+ */
 void build_message(float value) {
     // ESP8266 doesn't have a way to format floating point numbers directly
     // a work around is to conver the float to a String.
@@ -247,15 +303,23 @@ void build_message(float value) {
     snprintf(_message, sizeof(_message), "%s", strVal.c_str());
 }
 
+/**
+ * Sends a publish message to the MQTT broker using the values found in _topic and _message
+ */
 void publish_message() {
     publish_message(_topic, _message);
 }
 
+/**
+ * Sends a publish message to the MQTT broker using the provided topic and message string
+ */
 void publish_message(char* topic, char* message) {
+    // Check if we have a connection to the MQTT broker
     if (client.connected()) {
         client.publish(topic, message);
         delay(MICRO_SECONDS(100));
     } else {
+        // We don't currently have a connection the MQTT broker so queue up the message to be resent
         Message m;
         strcpy_P(m.topic, _topic);
         strcpy_P(m.message, _message);
@@ -264,7 +328,7 @@ void publish_message(char* topic, char* message) {
 
         int rc = _unsent_messages.push(m);
         while ((rc != QUEUE_STATUS_OK) && (rc == QUEUE_STATUS_FULL)) {
-            // We really only want to keep the most recent stuff around
+            // We really only want to keep the most recent messages
             // at this point the data at the front of the queue is stale so just toss it out.
 
             _unsent_messages.pop();
@@ -278,6 +342,9 @@ void publish_message(char* topic, char* message) {
     }
 }
 
+/**
+ * Sends information about this thermostat device to the MQTT broker
+ */
 void broadcast_self() {
     build_message(_thermostat_id);
     client.publish(_thermostat_presence_topic, _message);

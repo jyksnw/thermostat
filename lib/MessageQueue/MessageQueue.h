@@ -27,10 +27,29 @@ private:
     int _tail = 0;
     int _status = QUEUE_STATUS_EMPTY;
 public:
+    /**
+     * Adds the message to the queue
+     */
     int push(Message m);
+
+    /**
+     * Gets and removes the first message in the queue
+     */
     Message pop();
+
+    /**
+     * Get but doesn't remove the first message in the queue
+     */
     Message peak();
+
+    /**
+     * Checks if the queue is empty
+     */
     bool isEmpty();
+
+    /**
+     * Returns the current queue status
+     */
     int status();
 };
 

@@ -5,8 +5,9 @@
 #include "MessageQueue.h"
 
 int MessageQueue::push(Message m) {
-    int tail = (_tail + 1) % QUEUE_SIZE;
+    int tail = (_tail + 1) % QUEUE_SIZE + 1;
 
+    // Check to see if the tail has met up with the head
     if (tail != _head) {
         _queue[_tail] = m;
         _tail = tail;
@@ -26,7 +27,7 @@ Message MessageQueue::pop() {
     }
 
     Message m = _queue[_head];
-    _head = (_head + 1) % QUEUE_SIZE;
+    _head = (_head + 1) % QUEUE_SIZE + 1;
 
     return m;
 }

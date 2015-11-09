@@ -18,14 +18,51 @@ private:
     void (*_callback)(void);
     bool _running;
 public:
+    /**
+     * Constructor
+     */
     Timer(unsigned long interval, void (*callback)(void));
+
+    /**
+     * Returns the currently set timer interval
+     */
     unsigned long interval();
+
+    /**
+     * Sets the timer interval
+     */
     void set_interval(unsigned long interval);
+
+    /**
+     * Sets the callback function
+     */
     void set_callback(void (*callback)(void));
+
+    /**
+     * Starts the timer without delay
+     */
     void start();
+
+    /**
+     * Starts the timer
+     * Delays execution of callback if delay=true
+     */
     void start(bool delay);
+
+    /**
+     * Runs the timer
+     * NOTE: should be called in the main program loop
+     */
     void run();
+
+    /**
+     * Stops the timer
+     */
     void stop();
+
+    /**
+     * Checks the running state of the timer
+     */
     bool running();
 };
 
