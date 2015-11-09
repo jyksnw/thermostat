@@ -6,11 +6,13 @@
 
 #include <Arduino.h>
 
+/* Third-party libraries */
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
 #include <OneWire.h>
 #include <DallasTemperature.h>
 
+/* User created libraries */
 #include <Timer.h>
 #include <MessageQueue.h>
 
@@ -57,8 +59,8 @@ int _thermostat_id = 2472823;   // TODO: This should be a value stored in the EE
 // TODO: setup an initial connection routine that setups a SoftAP and allows user to set
 //      network configuration (SSID, Password, etc...)
 // Update these with values suitable for your network.
-const char* ssid = "*******";
-const char* password = "********";
+const char* ssid = "*****";
+const char* password = "*******";
 
 // MQTT related stuff
 WiFiClient wifi_client;
